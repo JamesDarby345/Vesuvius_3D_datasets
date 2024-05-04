@@ -3,7 +3,10 @@
 ## What this repo does
 The purpose of this repo is to produce more high quality, complete, 3d voxel, instance labelled data similar to the data tim skinner produced for the Vesuvius Scroll Challenge March Open Source Prize.  
 
-![goodInstanceSeg](https://github.com/JamesDarby345/Vesuvius_3D_datasets/assets/49734270/30cb539e-1cb6-42ce-8182-dd97ca5a5a1c)
+
+<img height="300" alt="good 2d instance slice" src="https://github.com/JamesDarby345/Vesuvius_3D_datasets/assets/49734270/30cb539e-1cb6-42ce-8182-dd97ca5a5a1c">
+<img height="300" alt="3d slicer label example" src ="https://github.com/JamesDarby345/Vesuvius_3D_datasets/assets/49734270/d18c6c23-a57d-42d1-804c-773e52c8da20">
+
 
 A 2d slice of a cube with the borders of the label overlaid that was produced with this repo.
 
