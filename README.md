@@ -7,7 +7,7 @@ The purpose of this repo is to produce more high quality, complete, 3d voxel, in
 
 A 2d slice of a cube with the borders of the label overlaid that was produced with this repo.
 
-Drive link to some preliminary 256^3 nrrd labels: [drive link](https://drive.google.com/drive/folders/1URimrVBj8-_boMCHvuELzEqS1Lg8qZIt?usp=sharing)
+Drive link to 10 preliminary 256^3 nrrd 3d instance labels: [drive link](https://drive.google.com/drive/folders/1URimrVBj8-_boMCHvuELzEqS1Lg8qZIt?usp=sharing)
 
 ## Why more of this data is useful
 The current best attempt at autosegmentation, Thaumato Anaklpytor relies on a 3d sobel kernel to extract sheet surface points and groups them into sheets with Mask3D. This has shown to be succesful, but I doubt it will generalize to dense scroll regions where nearly every pixel is scroll. The 3D sobel kernel activations would thus be weak.
