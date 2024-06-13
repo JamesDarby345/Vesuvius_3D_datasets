@@ -16,7 +16,7 @@ def get_file_names(directory):
 
     return file_names
 
-def partition_mesh(mesh, chunk_size):
+def partition_mesh(mesh, chunk_size, padding=0):
     """
     Partition the mesh into chunks using a k-d tree and return the chunks.
     """
@@ -30,6 +30,13 @@ def partition_mesh(mesh, chunk_size):
     z_min, z_max = int(np.floor(vertices[:, 2].min() / chunk_size) * chunk_size), int(np.ceil(vertices[:, 2].max() / chunk_size) * chunk_size)
     
     print("Ranges, x: ", x_min, x_max, "y:", y_min, y_max, "z:", z_min, z_max)
+    #testing values
+    # x_min= 3328
+    # x_max= 3584
+    # y_min=2560
+    # y_max=2816
+    # z_min=4864
+    # z_max=5120
 
     x_range = np.arange(x_min, x_max + chunk_size, chunk_size)
     y_range = np.arange(y_min, y_max + chunk_size, chunk_size)
@@ -42,8 +49,8 @@ def partition_mesh(mesh, chunk_size):
         for y in y_range:
             for z in z_range:
                 # Define the bounding box for the chunk
-                min_bound = np.array([x, y, z])
-                max_bound = min_bound + chunk_size
+                min_bound = np.array([x, y, z]) - padding
+                max_bound = min_bound + chunk_size + 2*padding
                 
                 # Query the vertices within the bounding box
                 indices = np.where(
@@ -58,7 +65,7 @@ def partition_mesh(mesh, chunk_size):
 
     return chunks
 
-def save_mesh_chunks(mesh, chunks, current_directory, chunk_size, i):
+def save_mesh_chunks(mesh, chunks, current_directory, chunk_size, padding, i):
     """
     Save the mesh chunks to disk.
     """
@@ -80,18 +87,18 @@ def save_mesh_chunks(mesh, chunks, current_directory, chunk_size, i):
             if mesh.visual.kind == 'texture' and mesh.visual.uv is not None:
                 chunk_mesh.visual = trimesh.visual.TextureVisuals(uv=mesh.visual.uv[indices])
             
-            output_dir = f"{current_directory}/output/clipped_meshes/Scroll1/{chunk_key[0]}_{chunk_key[1]}_{chunk_key[2]}_xyz"
+            output_dir = f"{current_directory}/output/chunked_meshes_pad{padding}_chunk_size{chunk_size}/Scroll1/{chunk_key[0]}_{chunk_key[1]}_{chunk_key[2]}_xyz"
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
             chunk_mesh.export(output_dir + f"/{chunk_key[0]}_{chunk_key[1]}_{chunk_key[2]}_xyz_mesh_{i}.obj")
 
-def process_mesh(mesh, current_directory, chunk_size, i):
-    chunks = partition_mesh(mesh, chunk_size)
-    save_mesh_chunks(mesh, chunks, current_directory, chunk_size, i)
+def process_mesh(mesh, current_directory, chunk_size, i, padding=0):
+    chunks = partition_mesh(mesh, chunk_size, padding=padding)
+    save_mesh_chunks(mesh, chunks, current_directory, chunk_size, padding, i)
 
-def main(meshes, current_directory, chunk_size):
+def main(meshes, current_directory, chunk_size, padding):
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures = [executor.submit(process_mesh, meshes[i], current_directory, chunk_size, i) for i in range(len(meshes))]
+        futures = [executor.submit(process_mesh, meshes[i], current_directory, chunk_size, i, padding=padding) for i in range(len(meshes))]
         for future in concurrent.futures.as_completed(futures):
             try:
                 future.result()
@@ -107,6 +114,7 @@ if __name__ == "__main__":
         meshes.append(trimesh.load_mesh(f"{obj_path}/{obj}"))
     print("meshes loaded")
     current_directory = os.getcwd()
-    chunk_size = 256  # Replace with your chunk size in units
+    chunk_size = 256  # Replace with chunk size in units
+    padding = 50 # Replace with padding in units
 
-    main(meshes, current_directory, chunk_size)
+    main(meshes, current_directory, chunk_size, padding)
