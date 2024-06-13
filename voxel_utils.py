@@ -71,6 +71,8 @@ def build_vertex_dicts(obj_paths, roi_x=[0,10000000000], roi_y=[0,10000000000], 
             for line in fd:
                 line = line.strip()
                 words = line.split()
+                if not words:
+                    continue
                 if words[0] == 'v':
                     obj_vertex_index += 1 #obj file faces are 1 indexed
                     # Extract the 3D coordinates of the vertex
