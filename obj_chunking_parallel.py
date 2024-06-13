@@ -22,12 +22,14 @@ def partition_mesh(mesh, chunk_size):
     """
     # Get the vertices and create a k-d tree
     vertices = mesh.vertices
-    tree = cKDTree(vertices)
+    # tree = cKDTree(vertices)
     
     # Define the ranges for partitioning
     x_min, x_max = int(np.floor(vertices[:, 0].min() / chunk_size) * chunk_size), int(np.ceil(vertices[:, 0].max() / chunk_size) * chunk_size)
     y_min, y_max = int(np.floor(vertices[:, 1].min() / chunk_size) * chunk_size), int(np.ceil(vertices[:, 1].max() / chunk_size) * chunk_size)
     z_min, z_max = int(np.floor(vertices[:, 2].min() / chunk_size) * chunk_size), int(np.ceil(vertices[:, 2].max() / chunk_size) * chunk_size)
+    
+    print("Ranges, x: ", x_min, x_max, "y:", y_min, y_max, "z:", z_min, z_max)
 
     x_range = np.arange(x_min, x_max + chunk_size, chunk_size)
     y_range = np.arange(y_min, y_max + chunk_size, chunk_size)
@@ -43,10 +45,14 @@ def partition_mesh(mesh, chunk_size):
                 min_bound = np.array([x, y, z])
                 max_bound = min_bound + chunk_size
                 
-                # Find the vertices within the bounding box
-                indices = tree.query_ball_point((min_bound + max_bound) / 2, chunk_size / 2)
+                # Query the vertices within the bounding box
+                indices = np.where(
+                    (vertices[:, 0] >= min_bound[0]) & (vertices[:, 0] < max_bound[0]) &
+                    (vertices[:, 1] >= min_bound[1]) & (vertices[:, 1] < max_bound[1]) &
+                    (vertices[:, 2] >= min_bound[2]) & (vertices[:, 2] < max_bound[2])
+                )[0]
                 
-                if indices:
+                if len(indices) > 0:
                     chunk_key = (x, y, z)
                     chunks[chunk_key] = indices
 
@@ -77,7 +83,7 @@ def save_mesh_chunks(mesh, chunks, current_directory, chunk_size, i):
             output_dir = f"{current_directory}/output/clipped_meshes/Scroll1/{chunk_key[0]}_{chunk_key[1]}_{chunk_key[2]}_xyz"
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-            chunk_mesh.export(output_dir + f"/mesh_{i}_{chunk_key[0]}_{chunk_key[1]}_{chunk_key[2]}_xyz.obj")
+            chunk_mesh.export(output_dir + f"/{chunk_key[0]}_{chunk_key[1]}_{chunk_key[2]}_xyz_mesh_{i}.obj")
 
 def process_mesh(mesh, current_directory, chunk_size, i):
     chunks = partition_mesh(mesh, chunk_size)
@@ -93,7 +99,7 @@ def main(meshes, current_directory, chunk_size):
                 print(f"Task generated an exception: {e}")
 
 if __name__ == "__main__":
-    obj_path = "/Volumes/16TB_RAID_0/Scroll1/segments/objs"#path to folder with obj files
+    obj_path = "/Volumes/16TB_RAID_0/Scroll1/segments/objs" #path to folder with obj files
     obj_files = get_file_names(obj_path)
     print(obj_files)
     meshes = []
