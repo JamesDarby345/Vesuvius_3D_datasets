@@ -5,6 +5,44 @@ from skimage.segmentation import find_boundaries
 from skimage.util import img_as_float
 from skimage.morphology import dilation, square
 import random
+import scipy.ndimage
+from matplotlib import pyplot as plt
+
+def label_foreground_structures(input_array, min_size=1000, foreground_value=2):
+    """
+    Label connected foreground structures in the input array, removing small structures below a specified size.
+    
+    Parameters:
+        input_array (np.ndarray): The input array with foreground structures labeled as 2.
+        min_size (int): Minimum size of the structures to retain. Structures smaller than this size will be removed.
+    
+    Returns:
+        np.ndarray: The labeled array with small structures removed and remaining structures relabeled.
+    """
+    
+    # Find connected components in the foreground (value 2)
+    foreground = input_array == foreground_value
+    
+    # Label connected components
+    labeled_array, num_features = scipy.ndimage.label(foreground)
+    
+    # Measure the size of each connected component
+    structure_sizes = np.array(scipy.ndimage.sum(foreground, labeled_array, range(num_features + 1)))
+    
+    # Create a mask to remove small structures
+    remove_mask = structure_sizes < min_size
+    remove_mask[0] = 0  # Ensure the background is not removed
+
+    # Remove small structures
+    labeled_array[remove_mask[labeled_array]] = 0
+
+    # Relabel the structures after removal
+    labeled_array, num_features = scipy.ndimage.label(labeled_array > 0)
+
+    print(f"Number of connected foreground structures before filtering: {num_features}")
+    print(f"Number of connected foreground structures after filtering: {np.max(labeled_array)}")
+    
+    return labeled_array
 
 def mark_boundaries_color(image, label_img, color=None, outline_color=None, mode='outer', background_label=0, dilation_size=1):
     """Return image with boundaries between labeled regions highlighted with consistent colors derived from labels.
