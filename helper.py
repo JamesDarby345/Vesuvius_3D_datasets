@@ -3,10 +3,73 @@ import numpy as np
 from skimage.color import gray2rgb, label2rgb
 from skimage.segmentation import find_boundaries
 from skimage.util import img_as_float
-from skimage.morphology import dilation, square
+from skimage.morphology import dilation, square, remove_small_objects, remove_small_holes
 import random
 import scipy.ndimage
 from matplotlib import pyplot as plt
+from scipy.ndimage import binary_dilation
+from scipy.interpolate import interp1d
+
+#filter out bright circular objects that are not papyrus but cause many unnesecary connections
+#filter from the semantic volumetric label specifically
+
+def interpolate_slices(raw_data, border_class=254):
+    # Find the indices of slices that have annotations
+    data = raw_data.copy()
+    data[data != border_class] = 0
+    print(np.sum(data))
+    annotated_slices = np.any(data, axis=(1, 2))
+    annotated_indices = np.where(annotated_slices)[0]
+
+    # Interpolated data initialization
+    interpolated_data = np.zeros_like(data)
+
+    # Iterate through each annotated slice
+    for i in range(len(annotated_indices) - 1):
+        start_idx = annotated_indices[i]
+        end_idx = annotated_indices[i + 1]
+
+        if end_idx - start_idx > 10:  # Skip if the gap is larger than 10 slices
+            print(f"Skipping interpolation between slices {start_idx} and {end_idx}")
+            continue
+
+        # Define the range of slices to interpolate
+        slice_range = np.arange(max(start_idx - 2, 0), min(end_idx + 3, data.shape[0]))
+
+        # Interpolation function for each pixel in the range
+        for x in range(data.shape[1]):
+            for y in range(data.shape[2]):
+                values = data[slice_range, x, y]
+                mask = values > 0
+                if np.sum(mask) > 1:
+                    interp_func = interp1d(slice_range[mask], values[mask], kind='linear', fill_value="extrapolate")
+                    interpolated_data[slice_range, x, y] = interp_func(slice_range)
+
+                        
+    # structure = np.ones((3, 3, 3))  # Define the structure for closing
+    # interpolated_data = binary_closing(interpolated_data, structure=structure).astype(interpolated_data.dtype)
+    interpolated_data[interpolated_data != 0] = border_class
+    return interpolated_data
+
+def bright_spot_mask(data):
+    # Calculate the threshold for the top 0.1% brightest voxels
+    threshold = np.percentile(data, 99.9)
+
+    # Create a mask for the top 1% brightest voxels
+    bright_spot_mask = (data > threshold)
+
+    # Apply small object removal (you can adjust the minimum size as needed)
+    min_size = 5  # Minimum size of objects to keep
+    bright_spot_mask = remove_small_objects(bright_spot_mask, min_size=min_size)
+
+    # Apply small hole removal (you can adjust the area threshold as needed)
+    area_threshold = 5  # Maximum area of holes to fill
+    bright_spot_mask = remove_small_holes(bright_spot_mask, area_threshold=area_threshold)
+    # Dilate the bright spot mask by one
+
+    bright_spot_mask = binary_dilation(bright_spot_mask, iterations=2)
+    return bright_spot_mask
+
 
 def label_foreground_structures(input_array, min_size=1000, foreground_value=2):
     """
